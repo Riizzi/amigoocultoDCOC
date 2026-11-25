@@ -66,13 +66,48 @@ def flower(c, center="#ffffff"):
     return petals + f'<circle r="1.9" fill="{center}"/>'
 
 def leopard():
-    blob = ('<ellipse rx="5.2" ry="4.2" fill="#e2b779"/>'
-            '<path d="M-6.5-2.5c-1-3 2-6 5-5.6 1 .8-.6 2-2.4 2.2-1.6.3-1.8 2.2-2.6 3.4ZM2-7c3-.6 6.4 1.8 6 5-.8.8-1.8-1-2.6-2.4C4.6-5.6 2.6-5.4 2-7ZM7.4 1.6c.4 3-2.6 6-6 6.2-.8-.8 1-1.8 2.4-2.6 1.4-.8 2.2-2.8 3.6-3.6ZM-1.6 7.6c-3 .4-6-1.6-6.4-4.4.6-.9 1.8.6 2.8 1.6 1 1.2 2.6 1.6 3.6 2.8Z" '
-            'fill="#6e4524" stroke="#6e4524" stroke-width="1.3" stroke-linejoin="round"/>')
-    dot = '<circle r="1.3" fill="#6e4524"/>'
-    body = place([(blob, 14, 14, 10, 1), (blob, 46, 10, -30, .85), (blob, 34, 36, 60, 1.05), (blob, 8, 46, 120, .8), (blob, 56, 52, 200, .9),
-                  (dot, 26, 22, 0, 1), (dot, 50, 28, 0, .9), (dot, 20, 58, 0, 1), (dot, 42, 58, 0, .8)])
-    return svg(body, size=64, opacity=0.42)
+    """Rosetas de onça: manchas escuras irregulares em volta de um miolo laranja,
+    mais pintas soltas. Ladrilho sem emenda (elementos repetidos nas bordas)."""
+    import random, math
+    rnd = random.Random(11)
+    SIZE = 120
+    dark, core = "#2e1a08", "#d08f35"
+    els = []
+
+    def blob(cx, cy, rx, ry, rot):
+        # elipse "torta": 6 pontos com raio sorteado, ligados por curvas suaves
+        pts = []
+        for k in range(6):
+            a = math.radians(k * 60 + rnd.uniform(-12, 12))
+            f = rnd.uniform(0.75, 1.15)
+            pts.append((rx * f * math.cos(a), ry * f * math.sin(a)))
+        d = f"M{(pts[0][0]+pts[1][0])/2:.1f} {(pts[0][1]+pts[1][1])/2:.1f}"
+        for k in range(6):
+            p1, p2 = pts[(k + 1) % 6], pts[(k + 2) % 6]
+            d += f"Q{p1[0]:.1f} {p1[1]:.1f} {(p1[0]+p2[0])/2:.1f} {(p1[1]+p2[1])/2:.1f}"
+        return f'<path transform="translate({cx:.1f} {cy:.1f}) rotate({rot:.0f})" d="{d}Z" fill="{dark}"/>'
+
+    # posições das rosetas: grade 3x3 com sorteio
+    for gx in range(4):
+        for gy in range(4):
+            cx = gx * 30 + 15 + (15 if gy % 2 else 0) + rnd.uniform(-8, 8)
+            cy = gy * 30 + 15 + rnd.uniform(-7, 7)
+            r = rnd.uniform(6.5, 8.5)
+            parts = [f'<ellipse cx="{cx:.1f}" cy="{cy:.1f}" rx="{r*0.85:.1f}" ry="{r*0.7:.1f}" fill="{core}" transform="rotate({rnd.uniform(0,180):.0f} {cx:.1f} {cy:.1f})"/>']
+            n = rnd.choice([4, 5, 5, 6])
+            start = rnd.uniform(0, 360)
+            for k in range(n):
+                ang = math.radians(start + k * 360 / n + rnd.uniform(-14, 14))
+                bx, by = cx + r * 1.05 * math.cos(ang), cy + r * 0.9 * math.sin(ang)
+                parts.append(blob(bx, by, rnd.uniform(4.2, 6), rnd.uniform(2.4, 3.4), math.degrees(ang) + 90))
+            els.append("".join(parts))
+    # pintas soltas entre as rosetas
+    for _ in range(10):
+        els.append(blob(rnd.uniform(0, SIZE), rnd.uniform(0, SIZE), rnd.uniform(1.6, 2.6), rnd.uniform(1.4, 2.2), rnd.uniform(0, 180)))
+
+    body = "".join(els)
+    tiled = "".join(f'<g transform="translate({dx} {dy})">{body}</g>' for dx in (-SIZE, 0, SIZE) for dy in (-SIZE, 0, SIZE))
+    return svg(tiled, size=SIZE, opacity=0.62)
 
 def laptop(c):
     return f'<path d="M-7-6H7V3H-7ZM-10 3h20l-1.6 3H-8.4Z" {S.format(c=c)}/>'

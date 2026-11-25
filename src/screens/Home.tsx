@@ -1,5 +1,6 @@
 import type { Participant } from '../api/types';
-import { Flake, Garland, Sprig } from '../components/Decor';
+import { Garland } from '../components/Decor';
+import { Santa, XmasTree } from '../components/Festive';
 import { TagFace } from '../components/Tag';
 import { EVENT } from '../data';
 
@@ -24,9 +25,6 @@ export function Home({ participants, error, onPick }: Props) {
     <main className="home">
       <Garland />
       <header className="hero">
-        <Flake className="f1" />
-        <Flake className="f2" />
-        <Flake className="f3" />
         <h1 className="hero-title">
           Amigo oculto
           <span className="hero-team">da {EVENT.team}</span>
@@ -35,10 +33,13 @@ export function Home({ participants, error, onPick }: Props) {
           <p className="event-when">{EVENT.when}</p>
           <p className="event-where">{EVENT.where}</p>
         </div>
-        <p className="countdown" aria-live="polite">
-          {c.n !== null && <span className="countdown-n">{c.n}</span>}
-          <span className="countdown-label">{c.label}</span>
-        </p>
+        <div className="seal">
+          <Santa />
+          <p className="countdown">
+            {c.n !== null && <span className="countdown-n">{c.n}</span>}
+            <span className="countdown-label">{c.label}</span>
+          </p>
+        </div>
       </header>
 
       <section className="pick" aria-labelledby="pick-title">
@@ -62,7 +63,7 @@ export function Home({ participants, error, onPick }: Props) {
             Array.from({ length: 7 }, (_, i) => <li key={i} className="tag-skeleton" />)}
         </ul>
       </section>
-      <Sprig className="home-sprig" />
+      <XmasTree className="home-tree" />
     </main>
   );
 }
