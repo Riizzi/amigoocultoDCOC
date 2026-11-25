@@ -119,17 +119,14 @@ button {
   --t-ac: var(--berry);
 }
 [data-person='marcia'] {
-  --t-bg: #f1d39b;
+  --t-bg: #f7e7cb;
   --t-fg: #4f2f14;
   --t-ac: var(--berry);
 }
 
-/* patinho do João: amarelo */
+/* patinho do João: só o traço, em amarelo */
 .duck {
-  color: #9a6400;
-}
-.duck .duck-body {
-  fill: #f8cf45;
+  color: #d29f00;
 }
 
 /* ---------- Gift tag ---------- */
@@ -1140,9 +1137,4 @@ button {
 /* keep focused/scrolled controls clear of the fixed tab bar */
 .profile-body :is(button, input, textarea, a) {
   scroll-margin-bottom: 120px;
-}
-
-/* oncinha: ladrilho maior para as rosetas não ficarem miúdas */
-.tag[data-person='marcia'] {
-  background-size: 120px;
 }

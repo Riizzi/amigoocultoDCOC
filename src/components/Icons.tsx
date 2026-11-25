@@ -79,10 +79,10 @@ function Gatinha() {
 function Pato() {
   return (
     <svg {...base} className="duck">
-      <circle cx="21" cy="16" r="7" className="duck-body" />
+      <circle cx="21" cy="16" r="7" />
       <path d="M14.5 14.5 7 16.5l7.5 2.5" className="accent" fill="currentColor" />
       <circle cx="22.5" cy="14.5" r="1" fill="currentColor" />
-      <path d="M18 22.5c0 2.5-2.5 4.5-7 5 0 8 7 12.5 16 12.5 10 0 16-6 16-14-5 3.5-11 3-15 0-1.5-1-3-2-3.5-3.5" className="duck-body" />
+      <path d="M18 22.5c0 2.5-2.5 4.5-7 5 0 8 7 12.5 16 12.5 10 0 16-6 16-14-5 3.5-11 3-15 0-1.5-1-3-2-3.5-3.5" />
       <path d="M21 31c4 3.5 10 3.5 14 0" />
       <path d="M8 45h32" className="accent" />
     </svg>
