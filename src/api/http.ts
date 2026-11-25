@@ -6,6 +6,7 @@ async function call<T>(path: string, init: RequestInit & { token?: string } = {}
   try {
     res = await fetch(`/api/${path}`, {
       ...rest,
+      cache: 'no-store',
       headers: {
         'content-type': 'application/json',
         ...(token ? { authorization: `Bearer ${token}` } : {}),
@@ -50,5 +51,6 @@ export const httpApi: Api = {
   adminResetDraw: async (token) => {
     await call('admin', post({ action: 'resetDraw' }, token));
   },
+  adminStatus: (token) => call<{ generatedAt: string | null }>('admin', post({ action: 'status' }, token)),
 };
 

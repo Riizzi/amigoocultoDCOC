@@ -19,6 +19,7 @@ const digest = (s: string) => createHash('sha256').update(s).digest();
  *   { action: 'login', password }      -> { token }
  *   { action: 'resetPin', id }         (com token)
  *   { action: 'resetDraw' }            (com token)
+ *   { action: 'status' }               (com token) -> { generatedAt }
  */
 export const POST = route(async (req) => {
   const b = await body<{ action?: string; password?: unknown; id?: unknown }>(req);
@@ -45,6 +46,13 @@ export const POST = route(async (req) => {
   if (b.action === 'resetDraw') {
     await assignIfMissing(true);
     return json({ ok: true });
+  }
+
+  if (b.action === 'status') {
+    const { rows } = await db.query<{ value: string }>(
+      "SELECT value FROM meta WHERE key = 'draw_generated_at'",
+    );
+    return json({ generatedAt: rows[0]?.value ?? null });
   }
 
   throw new HttpError(400, 'Ação desconhecida.');

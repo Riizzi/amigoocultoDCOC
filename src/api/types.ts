@@ -49,4 +49,6 @@ export interface Api {
   adminLogin(password: string): Promise<string>;
   adminResetPin(adminToken: string, id: ParticipantId): Promise<void>;
   adminResetDraw(adminToken: string): Promise<void>;
+  /** Quando o sorteio atual foi gerado (ISO) — para conferir que "refazer" funcionou. */
+  adminStatus(adminToken: string): Promise<{ generatedAt: string | null }>;
 }

@@ -18,6 +18,7 @@ interface Db {
   assignment: Record<ParticipantId, ParticipantId>;
   drawn: ParticipantId[];
   gifts: Gift[];
+  generatedAt?: string;
 }
 
 const KEY = 'amigo-oculto-dcoc:mock';
@@ -182,11 +183,17 @@ export const mockApi: Api = {
     return wait(undefined);
   },
 
+  async adminStatus(token) {
+    if (token !== 'mock-admin') throw new ApiError('Sem permissão.');
+    return wait({ generatedAt: load().generatedAt ?? null });
+  },
+
   async adminResetDraw(token) {
     if (token !== 'mock-admin') throw new ApiError('Sem permissão.');
     const db = load();
     db.assignment = derangement(PEOPLE.map((p) => p.id));
     db.drawn = [];
+    db.generatedAt = new Date().toISOString();
     save(db);
     return wait(undefined);
   },

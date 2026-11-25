@@ -9,11 +9,32 @@ export function Admin({ onBack }: { onBack: () => void }) {
   const [people, setPeople] = useState<Participant[]>([]);
   const [confirmRedo, setConfirmRedo] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const refresh = () => api.listParticipants().then(setPeople);
+  const refresh = async () => {
+    setPeople(await api.listParticipants());
+    if (token) setGeneratedAt((await api.adminStatus(token)).generatedAt);
+  };
   useEffect(() => {
-    if (token) refresh();
+    if (token) refresh().catch(() => setError('Não foi possível carregar o status.'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  async function run(action: () => Promise<void>, ok: string) {
+    setBusy(true);
+    setError(null);
+    setMsg(null);
+    try {
+      await action();
+      await refresh();
+      setMsg(ok);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Não foi possível conectar. Nada foi alterado.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function login(e: React.FormEvent) {
     e.preventDefault();
@@ -25,18 +46,26 @@ export function Admin({ onBack }: { onBack: () => void }) {
     }
   }
 
-  async function resetPin(p: Participant) {
-    await api.adminResetPin(token!, p.id);
-    setMsg(`PIN de ${p.name} zerado. No próximo acesso, a pessoa cria um novo.`);
-    refresh();
-  }
+  const resetPin = (p: Participant) =>
+    run(
+      () => api.adminResetPin(token!, p.id),
+      `PIN de ${p.name} zerado. No próximo acesso, a pessoa cria um novo.`,
+    );
 
-  async function redo() {
-    await api.adminResetDraw(token!);
-    setConfirmRedo(false);
-    setMsg('Sorteio refeito. Todos precisam sortear de novo.');
-    refresh();
-  }
+  const redo = () =>
+    run(async () => {
+      await api.adminResetDraw(token!);
+      setConfirmRedo(false);
+    }, 'Sorteio refeito. Todos precisam sortear de novo.');
+
+  const fmt = (iso: string) =>
+    new Date(iso).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
 
   return (
     <main className="admin">
@@ -68,6 +97,14 @@ export function Admin({ onBack }: { onBack: () => void }) {
               {msg}
             </p>
           )}
+          {error && (
+            <p className="alert" role="alert">
+              {error}
+            </p>
+          )}
+          <p className="muted small">
+            Sorteio atual gerado em {generatedAt ? fmt(generatedAt) : '—'}.
+          </p>
           <table className="adm-table">
             <thead>
               <tr>
@@ -89,7 +126,7 @@ export function Admin({ onBack }: { onBack: () => void }) {
                     <button
                       type="button"
                       className="ghost small"
-                      disabled={!p.hasPin}
+                      disabled={!p.hasPin || busy}
                       onClick={() => resetPin(p)}
                     >
                       Zerar PIN
@@ -112,8 +149,8 @@ export function Admin({ onBack }: { onBack: () => void }) {
                   <button type="button" className="ghost" onClick={() => setConfirmRedo(false)}>
                     Cancelar
                   </button>
-                  <button type="button" className="danger" onClick={redo}>
-                    Refazer sorteio
+                  <button type="button" className="danger" onClick={redo} disabled={busy}>
+                    {busy ? 'Refazendo…' : 'Refazer sorteio'}
                   </button>
                 </div>
               </>

@@ -95,6 +95,7 @@ async function migrate() {
       created_at timestamptz NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS gifts_owner ON gifts(owner_id);
+    CREATE TABLE IF NOT EXISTS meta (key text PRIMARY KEY, value text NOT NULL);
   `);
   const ids = PEOPLE.map((p) => p.id);
   await db.query(
@@ -132,6 +133,11 @@ export async function assignIfMissing(force: boolean) {
         `UPDATE participants p SET target = v.t, drawn = false
          FROM unnest($1::text[], $2::text[]) AS v(id, t) WHERE p.id = v.id`,
         [ids, ids.map((id) => pairs.get(id))],
+      );
+      await client.query(
+        `INSERT INTO meta (key, value) VALUES ('draw_generated_at', $1)
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+        [new Date().toISOString()],
       );
     }
     await client.query('COMMIT');

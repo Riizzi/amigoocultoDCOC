@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError, type ParticipantId, type Session } from '../api';
 import { UiIcon } from '../components/Icons';
 import { TagFace } from '../components/Tag';
@@ -21,11 +21,30 @@ export function Profile({ session, onExit, onExpired }: Props) {
   const [viewing, setViewing] = useState<ParticipantId | null>(null);
   const me = session.participantId;
 
-  useEffect(() => {
-    api.getMyDraw(session).then(setTarget, (e) => {
-      if (e instanceof ApiError) onExpired();
-    });
+  // Busca o sorteio ao abrir, ao voltar para a aba/app e ao tocar em "Sortear":
+  // se o admin refez o sorteio, a tela não fica mostrando o par antigo.
+  const refreshDraw = useCallback(() => {
+    api.getMyDraw(session).then(
+      (t) => {
+        setTarget(t);
+        if (!t) setTab('draw');
+      },
+      (e) => {
+        if (e instanceof ApiError && /Sessão/.test(e.message)) onExpired();
+      },
+    );
   }, [session, onExpired]);
+
+  useEffect(() => {
+    refreshDraw();
+    const onVisible = () => document.visibilityState === 'visible' && refreshDraw();
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', refreshDraw);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', refreshDraw);
+    };
+  }, [refreshDraw]);
 
   const tabs: { id: Tab; label: string; Icon: () => React.JSX.Element }[] = [
     { id: 'draw', label: 'Sortear', Icon: UiIcon.gift },
@@ -68,7 +87,10 @@ export function Profile({ session, onExit, onExpired }: Props) {
             aria-current={tab === id ? 'page' : undefined}
             disabled={id !== 'draw' && !target}
             title={id !== 'draw' && !target ? 'Liberado depois do sorteio' : undefined}
-            onClick={() => setTab(id)}
+            onClick={() => {
+              setTab(id);
+              if (id === 'draw') refreshDraw();
+            }}
           >
             <Icon />
             <span>{label}</span>
