@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import { api, ApiError, type Gift, type GiftInput, type Session } from '../api';
 import { GiftItem } from '../components/GiftItem';
+import { UiIcon } from '../components/Icons';
 import { brl, EVENT } from '../data';
 
 const empty: GiftInput = { name: '', description: '', price: null, link: '' };
@@ -134,6 +135,24 @@ export function MyListTab({ session }: { session: Session }) {
   const [gifts, setGifts] = useState<Gift[] | null>(null);
   const [editing, setEditing] = useState<GiftInput | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  const [orderError, setOrderError] = useState<string | null>(null);
+
+  async function move(index: number, delta: -1 | 1) {
+    if (!gifts) return;
+    const to = index + delta;
+    if (to < 0 || to >= gifts.length) return;
+    const prev = gifts;
+    const next = [...gifts];
+    [next[index], next[to]] = [next[to], next[index]];
+    setGifts(next);
+    setOrderError(null);
+    try {
+      await api.reorderGifts(session, next.map((g) => g.id));
+    } catch (e) {
+      setGifts(prev);
+      setOrderError(e instanceof ApiError ? e.message : 'Não foi possível salvar a ordem. Tente de novo.');
+    }
+  }
 
   useEffect(() => {
     api.listGifts(session, session.participantId).then(setGifts, () => setGifts([]));
@@ -159,7 +178,11 @@ export function MyListTab({ session }: { session: Session }) {
       <h1 id="mine-title" className="section-title">
         O que eu gostaria de ganhar
       </h1>
-      <p className="muted">Sugestões de até {brl(EVENT.priceCap)}. Quem tirou você vê esta lista.</p>
+      <p className="muted">
+        Sugestões de até {brl(EVENT.priceCap)}. Quem tirou você vê esta lista. Use as setas para pôr em
+        ordem: a 1ª é a que você mais quer.
+      </p>
+      {orderError && <p className="alert">{orderError}</p>}
 
       {gifts === null && <p className="muted pad">Carregando…</p>}
       {gifts?.length === 0 && !editing && (
@@ -167,14 +190,36 @@ export function MyListTab({ session }: { session: Session }) {
       )}
 
       <ul className="gifts">
-        {gifts?.map((g) =>
+        {gifts?.map((g, i) =>
           editing?.id === g.id ? (
             <li key={g.id} className="gift editing">
               <GiftForm initial={editing} onCancel={() => setEditing(null)} onSave={save} />
             </li>
           ) : (
-            <GiftItem key={g.id} gift={g}>
+            <GiftItem key={g.id} gift={g} rank={gifts.length > 1 ? i + 1 : undefined}>
               <div className="gift-actions">
+                {gifts.length > 1 && confirmDel !== g.id && (
+                  <span className="order-btns">
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      onClick={() => move(i, -1)}
+                      disabled={i === 0}
+                      aria-label={`Subir ${g.name} na preferência`}
+                    >
+                      <UiIcon.up />
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      onClick={() => move(i, 1)}
+                      disabled={i === gifts.length - 1}
+                      aria-label={`Descer ${g.name} na preferência`}
+                    >
+                      <UiIcon.down />
+                    </button>
+                  </span>
+                )}
                 {confirmDel === g.id ? (
                   <>
                     <span>Excluir esta sugestão?</span>

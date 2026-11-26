@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { api, ApiError, type ParticipantId, type Session } from '../api';
+import { UiIcon } from '../components/Icons';
 import { TagFace } from '../components/Tag';
 import { nameOf, PEOPLE } from '../data';
 
@@ -10,12 +11,26 @@ interface Props {
   onSeeList: (id: ParticipantId) => void;
 }
 
+function BlankTag({ label }: { label: string }) {
+  return (
+    <span className="tag tag-lg tag-blank">
+      <span className="tag-hole" aria-hidden />
+      <span className="tag-q" aria-hidden>
+        ?
+      </span>
+      <span className="tag-name">{label}</span>
+    </span>
+  );
+}
+
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export function DrawTab({ session, target, onDrawn, onSeeList }: Props) {
   const [rolling, setRolling] = useState<ParticipantId | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [justDrawn, setJustDrawn] = useState(false);
+  // Ao abrir o perfil, a etiqueta fica virada; logo depois de sortear, aparece revelada.
+  const [shown, setShown] = useState(false);
   const timer = useRef<number | undefined>(undefined);
 
   async function run() {
@@ -37,6 +52,7 @@ export function DrawTab({ session, target, onDrawn, onSeeList }: Props) {
       window.clearInterval(timer.current);
       setRolling(null);
       setJustDrawn(true);
+      setShown(true);
       onDrawn(result);
     } catch (e) {
       window.clearInterval(timer.current);
@@ -54,11 +70,36 @@ export function DrawTab({ session, target, onDrawn, onSeeList }: Props) {
           Seu amigo oculto
         </h1>
         <div className={`reveal${justDrawn ? ' reveal-in' : ''}`}>
-          <TagFace id={target} name={nameOf(target)} size="lg" />
+          <button
+            type="button"
+            className={`flip${shown ? ' flipped' : ''}`}
+            onClick={() => setShown((v) => !v)}
+            aria-label={shown ? `Seu amigo oculto: ${nameOf(target)}. Toque para esconder.` : 'Etiqueta escondida. Toque para ver.'}
+          >
+            <span className="flip-inner">
+              <span className="flip-face flip-back" aria-hidden>
+                <BlankTag label="Toque para ver" />
+              </span>
+              <span className="flip-face flip-front" aria-hidden>
+                <TagFace id={target} name={nameOf(target)} size="lg" />
+              </span>
+            </span>
+          </button>
         </div>
-        <p className="muted center">Só você vê este nome.</p>
+        <button
+          type="button"
+          className="ghost flip-toggle"
+          aria-pressed={shown}
+          onClick={() => setShown((v) => !v)}
+        >
+          {shown ? <UiIcon.eyeOff /> : <UiIcon.eye />}
+          {shown ? 'Esconder' : 'Mostrar'}
+        </button>
+        <p className="muted center">
+          {shown ? 'Só você vê este nome.' : 'O nome fica escondido até você tocar.'}
+        </p>
         <button type="button" className="primary" onClick={() => onSeeList(target)}>
-          Ver a lista de {nameOf(target)}
+          Ver a lista de presentes
         </button>
       </section>
     );
@@ -73,13 +114,7 @@ export function DrawTab({ session, target, onDrawn, onSeeList }: Props) {
         {rolling ? (
           <TagFace id={rolling} name={nameOf(rolling)} size="lg" />
         ) : (
-          <span className="tag tag-lg tag-blank">
-            <span className="tag-hole" aria-hidden />
-            <span className="tag-q" aria-hidden>
-              ?
-            </span>
-            <span className="tag-name">Quem será?</span>
-          </span>
+          <BlankTag label="Quem será?" />
         )}
       </div>
       <p className="muted center">

@@ -63,13 +63,16 @@ export function ListsTab({ session, me, target, selected, onSelect }: Props) {
 
       <div role="tabpanel" aria-label={`Lista de ${nameOf(current)}`}>
         {loading && <p className="muted pad">Carregando…</p>}
+        {!loading && gifts.list.length > 1 && (
+          <p className="muted small list-hint">Em ordem de preferência: o 1º é o que a pessoa mais quer.</p>
+        )}
         {!loading && gifts.list.length === 0 && (
           <p className="empty">{nameOf(current)} ainda não adicionou sugestões.</p>
         )}
         {!loading && (
           <ul className="gifts">
-            {gifts.list.map((g) => (
-              <GiftItem key={g.id} gift={g} />
+            {gifts.list.map((g, i) => (
+              <GiftItem key={g.id} gift={g} rank={gifts.list.length > 1 ? i + 1 : undefined} />
             ))}
           </ul>
         )}

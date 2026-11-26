@@ -170,6 +170,19 @@ export const mockApi: Api = {
     return wait(undefined);
   },
 
+  async reorderGifts(s, ids) {
+    const db = check(s);
+    const mine = db.gifts.filter((g) => g.ownerId === s.participantId);
+    const others = db.gifts.filter((g) => g.ownerId !== s.participantId);
+    const rank = (id: string) => {
+      const i = ids.indexOf(id);
+      return i < 0 ? ids.length : i;
+    };
+    db.gifts = [...others, ...mine.sort((a, b) => rank(a.id) - rank(b.id))];
+    save(db);
+    return wait(undefined);
+  },
+
   async adminLogin(password) {
     if (password !== ADMIN_PASSWORD) throw new ApiError('Senha de administração incorreta.');
     return wait('mock-admin');

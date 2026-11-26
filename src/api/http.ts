@@ -43,6 +43,10 @@ export const httpApi: Api = {
     await call(`gifts?id=${encodeURIComponent(id)}`, { method: 'DELETE', token: s.token });
   },
 
+  reorderGifts: async (s, ids) => {
+    await call('gifts', { method: 'PUT', body: JSON.stringify({ order: ids }), token: s.token });
+  },
+
   adminLogin: async (password) =>
     (await call<{ token: string }>('admin', post({ action: 'login', password }))).token,
   adminResetPin: async (token, id) => {

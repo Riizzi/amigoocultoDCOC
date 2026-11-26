@@ -28,7 +28,7 @@ export const GET = route(async (req) => {
   const owner = new URL(req.url).searchParams.get('owner');
   if (!isPid(owner)) throw new HttpError(400, 'Participante inválido.');
   const { rows } = await db.query<Row>(
-    'SELECT * FROM gifts WHERE owner_id = $1 ORDER BY created_at',
+    'SELECT * FROM gifts WHERE owner_id = $1 ORDER BY position, created_at',
     [owner],
   );
   return json(rows.map(out));
@@ -67,9 +67,12 @@ export const POST = route(async (req) => {
   if (Number(count[0].n) >= MAX_GIFTS)
     throw new HttpError(400, `Limite de ${MAX_GIFTS} sugestões atingido.`);
 
+  // nova sugestão entra no fim da lista (menor preferência)
   const { rows } = await db.query<Row>(
-    `INSERT INTO gifts (id, owner_id, name, description, price, link)
-     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    `INSERT INTO gifts (id, owner_id, name, description, price, link, position)
+     VALUES ($1, $2, $3, $4, $5, $6,
+       (SELECT coalesce(max(position), 0) + 1 FROM gifts WHERE owner_id = $2))
+     RETURNING *`,
     [randomUUID(), me, name, description, price, link],
   );
   return json(out(rows[0]), 201);
@@ -81,5 +84,20 @@ export const DELETE = route(async (req) => {
   const id = new URL(req.url).searchParams.get('id') ?? '';
   if (!UUID.test(id)) throw new HttpError(400, 'Sugestão inválida.');
   await db.query('DELETE FROM gifts WHERE id = $1 AND owner_id = $2', [id, me]);
+  return json({ ok: true });
+});
+
+/** PUT /api/gifts  { order: [id, id, ...] }: ordem de preferência da própria lista (1º = preferido). */
+export const PUT = route(async (req) => {
+  const me = await requireUser(req);
+  const { order } = await body<{ order?: unknown }>(req);
+  if (!Array.isArray(order) || order.length > MAX_GIFTS || !order.every((id) => typeof id === 'string' && UUID.test(id)))
+    throw new HttpError(400, 'Ordem inválida.');
+  await db.query(
+    `UPDATE gifts g SET position = v.pos
+     FROM unnest($2::uuid[]) WITH ORDINALITY AS v(id, pos)
+     WHERE g.id = v.id AND g.owner_id = $1`,
+    [me, order],
+  );
   return json({ ok: true });
 });

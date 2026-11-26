@@ -46,6 +46,8 @@ export interface Api {
   listGifts(s: Session, ownerId: ParticipantId): Promise<Gift[]>;
   saveGift(s: Session, gift: GiftInput): Promise<Gift>;
   deleteGift(s: Session, giftId: string): Promise<void>;
+  /** Salva a ordem de preferência da própria lista (primeiro = preferido). */
+  reorderGifts(s: Session, ids: string[]): Promise<void>;
   adminLogin(password: string): Promise<string>;
   adminResetPin(adminToken: string, id: ParticipantId): Promise<void>;
   adminResetDraw(adminToken: string): Promise<void>;

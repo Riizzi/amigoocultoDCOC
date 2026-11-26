@@ -95,6 +95,7 @@ async function migrate() {
       created_at timestamptz NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS gifts_owner ON gifts(owner_id);
+    ALTER TABLE gifts ADD COLUMN IF NOT EXISTS position int NOT NULL DEFAULT 0;
     CREATE TABLE IF NOT EXISTS meta (key text PRIMARY KEY, value text NOT NULL);
   `);
   const ids = PEOPLE.map((p) => p.id);
